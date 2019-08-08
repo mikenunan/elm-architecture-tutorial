@@ -3,18 +3,12 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 
-
-
 -- MAIN
-
 
 main =
   Browser.sandbox { init = init, update = update, view = view }
 
-
-
 -- MODEL
-
 
 type alias Model =
   { name : String
@@ -22,21 +16,16 @@ type alias Model =
   , passwordAgain : String
   }
 
-
 init : Model
 init =
   Model "" "" ""
 
-
-
 -- UPDATE
-
 
 type Msg
   = Name String
   | Password String
   | PasswordAgain String
-
 
 update : Msg -> Model -> Model
 update msg model =
@@ -50,10 +39,7 @@ update msg model =
     PasswordAgain password ->
       { model | passwordAgain = password }
 
-
-
 -- VIEW
-
 
 view : Model -> Html Msg
 view model =
@@ -64,11 +50,9 @@ view model =
     , viewValidation model
     ]
 
-
 viewInput : String -> String -> String -> (String -> msg) -> Html msg
 viewInput t p v toMsg =
   input [ type_ t, placeholder p, value v, onInput toMsg ] []
-
 
 viewValidation : Model -> Html msg
 viewValidation model =

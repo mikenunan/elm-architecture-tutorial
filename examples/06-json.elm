@@ -5,10 +5,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode exposing (Decoder, field, string)
 
-
-
 -- MAIN
-
 
 main =
   Browser.element
@@ -18,30 +15,22 @@ main =
     , view = view
     }
 
-
-
 -- MODEL
-
 
 type Model
   = Failure
   | Loading
   | Success String
 
-
 init : () -> (Model, Cmd Msg)
 init _ =
   (Loading, getRandomCatGif)
 
-
-
 -- UPDATE
-
 
 type Msg
   = MorePlease
   | GotGif (Result Http.Error String)
-
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -57,19 +46,13 @@ update msg model =
         Err _ ->
           (Failure, Cmd.none)
 
-
-
 -- SUBSCRIPTIONS
-
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
 
-
-
 -- VIEW
-
 
 view : Model -> Html Msg
 view model =
@@ -77,7 +60,6 @@ view model =
     [ h2 [] [ text "Random Cats" ]
     , viewGif model
     ]
-
 
 viewGif : Model -> Html Msg
 viewGif model =
@@ -97,10 +79,7 @@ viewGif model =
         , img [ src url ] []
         ]
 
-
-
 -- HTTP
-
 
 getRandomCatGif : Cmd Msg
 getRandomCatGif =
@@ -108,7 +87,6 @@ getRandomCatGif =
     { url = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=cat"
     , expect = Http.expectJson GotGif gifDecoder
     }
-
 
 gifDecoder : Decoder String
 gifDecoder =
