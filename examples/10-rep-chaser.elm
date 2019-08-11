@@ -2,6 +2,7 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Task
 import Time
 import Url
 
@@ -23,20 +24,23 @@ main =
 type alias Model =
   { key : Nav.Key
   , url : Url.Url
-  , time : Time.Posix
+  , timeZone : Time.Zone
+  , timeOfLastRefresh : Time.Posix
   }
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model key url (Time.millisToPosix 0), Cmd.none )
+  ( Model key url Time.utc (Time.millisToPosix 0)
+  , Task.perform SetTimeZone Time.here
+  )
 
 -- UPDATE
 
 type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
-  | Tick Time.Posix
-
+  | SetTimeZone Time.Zone
+  | Refresh Time.Posix
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -53,9 +57,14 @@ update msg model =
       ( { model | url = url }
       , Cmd.none
       )
-    
-    Tick newTime ->
-      ( { model | time = newTime }
+
+    SetTimeZone timeZoneNew ->
+      ( { model | timeZone = timeZoneNew }
+      , Task.perform Refresh Time.now
+      )
+
+    Refresh timeOfRefresh ->
+      ( { model | timeOfLastRefresh = timeOfRefresh }
       , Cmd.none
       )
 
@@ -63,12 +72,17 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Time.every 1000 Tick
+  Time.every 5000 Refresh
 
 -- VIEW
 
 view : Model -> Browser.Document Msg
 view model =
+  let
+    hour   = String.fromInt (Time.toHour   model.timeZone model.timeOfLastRefresh)
+    minute = String.fromInt (Time.toMinute model.timeZone model.timeOfLastRefresh)
+    second = String.fromInt (Time.toSecond model.timeZone model.timeOfLastRefresh)
+  in
   { title = "URL Interceptor"
   , body =
       [ text "The current URL is: "
@@ -80,6 +94,7 @@ view model =
           , viewLink "/reviews/public-opinion"
           , viewLink "/reviews/shah-of-shahs"
           ]
+      , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
       ]
   }
 
