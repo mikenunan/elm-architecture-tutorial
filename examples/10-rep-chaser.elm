@@ -2,6 +2,7 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Time
 import Url
 
 -- MAIN
@@ -22,17 +23,20 @@ main =
 type alias Model =
   { key : Nav.Key
   , url : Url.Url
+  , time : Time.Posix
   }
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model key url, Cmd.none )
+  ( Model key url (Time.millisToPosix 0), Cmd.none )
 
 -- UPDATE
 
 type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
+  | Tick Time.Posix
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -49,12 +53,17 @@ update msg model =
       ( { model | url = url }
       , Cmd.none
       )
+    
+    Tick newTime ->
+      ( { model | time = newTime }
+      , Cmd.none
+      )
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-  Sub.none
+subscriptions model =
+  Time.every 1000 Tick
 
 -- VIEW
 
