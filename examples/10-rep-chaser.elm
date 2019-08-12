@@ -22,15 +22,44 @@ main =
 -- MODEL
 
 type alias Model =
-  { key : Nav.Key
-  , url : Url.Url
+  { url : Url.Url
+  , key : Nav.Key
   , timeZone : Time.Zone
   , timeOfLastRefresh : Time.Posix
   }
 
+type alias ExerciseSummaryItem =
+  {
+    exercise : String
+  , description : String
+  , loadKg : Float
+  , setsDailyTarget : Int
+  , repsPerSet : Int
+  }
+
+type alias ExerciseDayRecord =
+  {
+    exercise : String
+  , description : String
+  , loadKg : Float
+  , setsDailyTarget : Int
+  , repsPerSet : Int
+  , sets : List ExerciseSetRecord
+  }
+
+type alias ExerciseSetRecord =
+  {
+    time : Time.Posix
+  , zone : Time.Zone
+  -- The two fields above capture the time at which the set was recorded locally. The following field holds the UTC time of midnight on the morning of the date
+  -- on which the set was performed (the local date, which may differ from the date obtained by converting the time field above to UTC), and defines the set as
+  -- having been performed on that calendar day
+  , date : Time.Posix
+  }
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model key url Time.utc (Time.millisToPosix 0)
+  ( Model url key Time.utc (Time.millisToPosix 0)
   , Task.perform SetTimeZone Time.here
   )
 
@@ -63,8 +92,8 @@ update msg model =
       , Task.perform Refresh Time.now
       )
 
-    Refresh timeOfRefresh ->
-      ( { model | timeOfLastRefresh = timeOfRefresh }
+    Refresh timeNow ->
+      ( { model | timeOfLastRefresh = timeNow }
       , Cmd.none
       )
 
