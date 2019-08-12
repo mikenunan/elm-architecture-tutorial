@@ -2,6 +2,8 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Keyed as Keyed
+import Html.Lazy exposing (lazy)
 import Task
 import Time
 import Url
@@ -29,8 +31,7 @@ type alias Model =
   }
 
 type alias ExerciseSummaryItem =
-  {
-    exercise : String
+  { exercise : String
   , description : String
   , loadKg : Float
   , setsDailyTarget : Int
@@ -38,22 +39,24 @@ type alias ExerciseSummaryItem =
   }
 
 type alias ExerciseDayRecord =
-  {
-    exercise : String
+  { exercise : String
   , description : String
   , loadKg : Float
   , setsDailyTarget : Int
   , repsPerSet : Int
+  -- Each ExerciseSetRecord captures the time at which the set was recorded locally. The following date field holds the UTC time of midnight on the morning of
+  -- the date on which all the sets were performed (the local date, which may differ from the date obtained by converting the time field of an individual set to
+  -- UTC), but in all cases the date fields of the sets should match the value of this field in the day record that holds them.
+  , date : Time.Posix
   , sets : List ExerciseSetRecord
   }
 
 type alias ExerciseSetRecord =
-  {
-    time : Time.Posix
+  { time : Time.Posix
   , zone : Time.Zone
   -- The two fields above capture the time at which the set was recorded locally. The following field holds the UTC time of midnight on the morning of the date
   -- on which the set was performed (the local date, which may differ from the date obtained by converting the time field above to UTC), and defines the set as
-  -- having been performed on that calendar day
+  -- having been performed on that calendar day.
   , date : Time.Posix
   }
 
@@ -112,20 +115,27 @@ view model =
     minute = String.fromInt (Time.toMinute model.timeZone model.timeOfLastRefresh)
     second = String.fromInt (Time.toSecond model.timeZone model.timeOfLastRefresh)
   in
-  { title = "URL Interceptor"
-  , body =
-      [ text "The current URL is: "
-      , b [] [ text (Url.toString model.url) ]
-      , ul []
-          [ viewLink "/home"
-          , viewLink "/profile"
-          , viewLink "/reviews/the-century-of-the-self"
-          , viewLink "/reviews/public-opinion"
-          , viewLink "/reviews/shah-of-shahs"
-          ]
-      , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
-      ]
-  }
+    { title = "Rep Chaser (prototype)"
+    , body =
+        [ text "Exercise records by date:"
+        , Keyed.node "ul" [] (List.map viewKeyedExerciseSummaryItem exerciseSummaryItemKeys)
+        , text "The current URL is: "
+        , b [] [ text (Url.toString model.url) ]
+        , ul []
+            [ viewLink "/home"
+            , viewLink "/profile"
+            , viewLink "/reviews/the-century-of-the-self"
+            , viewLink "/reviews/public-opinion"
+            , viewLink "/reviews/shah-of-shahs"
+            ]
+        , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
+        ]
+    }
+
+viewKeyedExerciseSummaryItem : ExerciseSummaryItem -> (Time.Posix, Html msg)
+viewKeyedExerciseSummaryItem exerciseSummaryItem =
+  ( exerciseSummaryItem.)
+
 
 viewLink : String -> Html msg
 viewLink path =
