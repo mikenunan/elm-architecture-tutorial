@@ -44,20 +44,18 @@ type alias ExerciseDayRecord =
   , loadKg : Float
   , setsDailyTarget : Int
   , repsPerSet : Int
-  -- Each ExerciseSetRecord captures the time at which the set was recorded locally. The following date field holds the UTC time of midnight on the morning of
-  -- the date on which all the sets were performed (the local date, which may differ from the date obtained by converting the time field of an individual set to
-  -- UTC), but in all cases the date fields of the sets should match the value of this field in the day record that holds them.
-  , date : Time.Posix
-  , sets : List ExerciseSetRecord
+  -- Each LocalTimeRecord in setTimes captures the local time when a set was performed. The year/month/day fields below represents the calendar date when all
+  -- sets held by this day record were performed. The date part of the localised setTimes should always match the values of these fields in the day record that
+  -- holds them.
+  , year : Int
+  , month : Int
+  , day : Int
+  , setTimes : List LocalTimeRecord
   }
 
-type alias ExerciseSetRecord =
+type alias LocalTimeRecord =
   { time : Time.Posix
   , zone : Time.Zone
-  -- The two fields above capture the time at which the set was recorded locally. The following field holds the UTC time of midnight on the morning of the date
-  -- on which the set was performed (the local date, which may differ from the date obtained by converting the time field above to UTC), and defines the set as
-  -- having been performed on that calendar day.
-  , date : Time.Posix
   }
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
