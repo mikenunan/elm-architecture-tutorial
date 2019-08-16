@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy)
+import List exposing (length)
 import Task
 import Time
 import Url
@@ -28,29 +29,35 @@ type alias Model =
   , key : Nav.Key
   , timeZone : Time.Zone
   , timeOfLastRefresh : Time.Posix
+  , exerciseSummaries : List ExerciseSummaryItem
+  }
+
+type alias Exercise =
+  { name : String
+  , description : String
   }
 
 type alias ExerciseSummaryItem =
-  { exercise : String
-  , description : String
+  { exercise : Exercise
   , loadKg : Float
   , setsDailyTarget : Int
   , repsPerSet : Int
+  , dayRecords : List ExerciseDayRecord
+  }
+
+type alias CalendarDate =
+  { year : Int
+  , month : Int
+  , day : Int
   }
 
 type alias ExerciseDayRecord =
-  { exercise : String
-  , description : String
+  { exercise : Exercise
   , loadKg : Float
   , setsDailyTarget : Int
   , repsPerSet : Int
-  -- Each LocalTimeRecord in setTimes captures the local time when a set was performed. The year/month/day fields below represents the calendar date when all
-  -- sets held by this day record were performed. The date part of the localised setTimes should always match the values of these fields in the day record that
-  -- holds them.
-  , year : Int
-  , month : Int
-  , day : Int
-  , setTimes : List LocalTimeRecord
+  , calendarDate : CalendarDate
+  , setTimes : List LocalTimeRecord -- Applying toDate/toMonth/toDay to a member of setTimes should always return values that match what's in calendarDate
   }
 
 type alias LocalTimeRecord =
@@ -60,7 +67,7 @@ type alias LocalTimeRecord =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model url key Time.utc (Time.millisToPosix 0)
+  ( Model url key Time.utc (Time.millisToPosix 0) []
   , Task.perform SetTimeZone Time.here
   )
 
@@ -116,7 +123,7 @@ view model =
     { title = "Rep Chaser (prototype)"
     , body =
         [ text "Exercise records by date:"
-        , Keyed.node "ul" [] (List.map viewKeyedExerciseSummaryItem exerciseSummaryItemKeys)
+        , Keyed.node "ul" [] (List.map viewKeyedExerciseSummaryItem model.exerciseSummaries)
         , text "The current URL is: "
         , b [] [ text (Url.toString model.url) ]
         , ul []
@@ -130,10 +137,13 @@ view model =
         ]
     }
 
-viewKeyedExerciseSummaryItem : ExerciseSummaryItem -> (Time.Posix, Html msg)
+viewKeyedExerciseSummaryItem : ExerciseSummaryItem -> (String, Html msg)
 viewKeyedExerciseSummaryItem exerciseSummaryItem =
-  ( exerciseSummaryItem.)
+  ( exerciseSummaryItem.exercise.name, lazy viewExerciseSummaryItem exerciseSummaryItem )
 
+viewExerciseSummaryItem : ExerciseSummaryItem -> Html msg
+viewExerciseSummaryItem exerciseSummaryItem =
+  li [] [ text (String.fromInt (List.length exerciseSummaryItem.dayRecords)) ]
 
 viewLink : String -> Html msg
 viewLink path =
