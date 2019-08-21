@@ -2,6 +2,7 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick, onInput)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy)
 import List exposing (length)
@@ -28,8 +29,11 @@ type alias Model =
   { url : Url.Url
   , key : Nav.Key
   , timeZone : Time.Zone
-  , timeOfLastRefresh : Time.Posix
+  , exerciseNameEntry : String
+  , exerciseDescriptionEntry : String
+  , exercises : List Exercise
   , exerciseSummaries : List ExerciseSummaryItem
+  , timeOfLastRefresh : Time.Posix
   }
 
 type alias Exercise =
@@ -67,7 +71,7 @@ type alias LocalTimeRecord =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model url key Time.utc (Time.millisToPosix 0) []
+  ( Model url key Time.utc "" "" [] [] (Time.millisToPosix 0)
   , Task.perform SetTimeZone Time.here
   )
 
@@ -77,6 +81,9 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | SetTimeZone Time.Zone
+  | ExerciseNameChange String
+  | ExerciseDescriptionChange String
+  | AddExercise
   | Refresh Time.Posix
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -98,6 +105,21 @@ update msg model =
     SetTimeZone timeZoneNew ->
       ( { model | timeZone = timeZoneNew }
       , Task.perform Refresh Time.now
+      )
+
+    ExerciseNameChange newName ->
+      ( { model | exerciseNameEntry = newName }
+      , Cmd.none
+      )
+
+    ExerciseDescriptionChange newDescription ->
+      ( { model | exerciseDescriptionEntry = newDescription }
+      , Cmd.none
+      )
+
+    AddExercise ->
+      ( { model | exercises = Exercise model.exerciseNameEntry model.exerciseDescriptionEntry :: model.exercises }
+      , Cmd.none
       )
 
     Refresh timeNow ->
@@ -122,8 +144,11 @@ view model =
   in
     { title = "Rep Chaser (prototype)"
     , body =
-        [ text "Exercise records by date:"
-        , Keyed.node "ul" [] (List.map viewKeyedExerciseSummaryItem model.exerciseSummaries)
+        [ input [ placeholder "Exercise name", value model.exerciseNameEntry, onInput ExerciseNameChange ] []
+        , input [ placeholder "Description", value model.exerciseDescriptionEntry, onInput ExerciseDescriptionChange ] []
+        , button [ onClick AddExercise ] [ text "Add" ]
+        , div [] [ text "Exercises:" ]
+        , Keyed.node "ul" [] (List.map viewKeyedExercise model.exercises)
         , text "The current URL is: "
         , b [] [ text (Url.toString model.url) ]
         , ul []
@@ -136,6 +161,14 @@ view model =
         , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
         ]
     }
+
+viewKeyedExercise : Exercise -> (String, Html msg)
+viewKeyedExercise exercise =
+  ( exercise.name, lazy viewExercise exercise )
+
+viewExercise : Exercise -> Html msg
+viewExercise exercise =
+  li [] [ text ( exercise.name ++ " : " ++ exercise.description ) ]
 
 viewKeyedExerciseSummaryItem : ExerciseSummaryItem -> (String, Html msg)
 viewKeyedExerciseSummaryItem exerciseSummaryItem =
