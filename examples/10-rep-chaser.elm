@@ -32,7 +32,7 @@ type alias Model =
   , exerciseNameEntry : String
   , exerciseDescriptionEntry : String
   , exercises : List Exercise
-  , exerciseSummaries : List ExerciseSummaryItem
+  , exerciseHistories : List ExerciseHistory
   , timeOfLastRefresh : Time.Posix
   }
 
@@ -41,7 +41,7 @@ type alias Exercise =
   , description : String
   }
 
-type alias ExerciseSummaryItem =
+type alias ExerciseHistory =
   { exercise : Exercise
   , loadKg : Float
   , setsDailyTarget : Int
@@ -149,15 +149,6 @@ view model =
         , button [ onClick AddExercise ] [ text "Add" ]
         , div [] [ text "Exercises:" ]
         , Keyed.node "ul" [] (List.map viewKeyedExercise model.exercises)
-        , text "The current URL is: "
-        , b [] [ text (Url.toString model.url) ]
-        , ul []
-            [ viewLink "/home"
-            , viewLink "/profile"
-            , viewLink "/reviews/the-century-of-the-self"
-            , viewLink "/reviews/public-opinion"
-            , viewLink "/reviews/shah-of-shahs"
-            ]
         , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
         ]
     }
@@ -170,14 +161,10 @@ viewExercise : Exercise -> Html msg
 viewExercise exercise =
   li [] [ text ( exercise.name ++ " : " ++ exercise.description ) ]
 
-viewKeyedExerciseSummaryItem : ExerciseSummaryItem -> (String, Html msg)
-viewKeyedExerciseSummaryItem exerciseSummaryItem =
-  ( exerciseSummaryItem.exercise.name, lazy viewExerciseSummaryItem exerciseSummaryItem )
+viewKeyedExerciseHistory : ExerciseHistory -> (String, Html msg)
+viewKeyedExerciseHistory exerciseHistory =
+  ( exerciseHistory.exercise.name, lazy viewExerciseHistory exerciseHistory )
 
-viewExerciseSummaryItem : ExerciseSummaryItem -> Html msg
-viewExerciseSummaryItem exerciseSummaryItem =
-  li [] [ text (String.fromInt (List.length exerciseSummaryItem.dayRecords)) ]
-
-viewLink : String -> Html msg
-viewLink path =
-  li [] [ a [ href path ] [ text path ] ]
+viewExerciseHistory : ExerciseHistory -> Html msg
+viewExerciseHistory exerciseHistory =
+  li [] [ text (String.fromInt (List.length exerciseHistory.dayRecords)) ]
