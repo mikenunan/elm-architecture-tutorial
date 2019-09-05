@@ -3,36 +3,25 @@ import Html exposing (Html, Attribute, span, input, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 
-
-
 -- MAIN
-
 
 main =
   Browser.sandbox { init = init, update = update, view = view }
 
-
-
 -- MODEL
-
 
 type alias Model =
   { input : String
   }
 
-
 init : Model
 init =
   { input = "" }
 
-
-
 -- UPDATE
-
 
 type Msg
   = Change String
-
 
 update : Msg -> Model -> Model
 update msg model =
@@ -40,10 +29,7 @@ update msg model =
     Change newInput ->
       { model | input = newInput }
 
-
-
 -- VIEW
-
 
 view : Model -> Html Msg
 view model =
@@ -53,7 +39,6 @@ view model =
 
     Nothing ->
       viewConverter model.input "red" "???"
-
 
 viewConverter : String -> String -> String -> Html Msg
 viewConverter userInput color equivalentTemp =

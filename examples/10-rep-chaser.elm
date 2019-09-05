@@ -29,8 +29,12 @@ type alias Model =
   { url : Url.Url
   , key : Nav.Key
   , timeZone : Time.Zone
-  , exerciseNameEntry : String
-  , exerciseDescriptionEntry : String
+  , exerciseNameInput : String
+  , exerciseDescriptionInput : String
+  , exerciseLoadKgInput : String
+  , exerciseRepsPerSetInput : String
+  , exerciseSetsDailyTargetInput : String
+  , exercise : Maybe Exercise
   , exercises : List Exercise
   , exerciseHistories : List ExerciseHistory
   , timeOfLastRefresh : Time.Posix
@@ -39,13 +43,13 @@ type alias Model =
 type alias Exercise =
   { name : String
   , description : String
+  , loadKg : Float
+  , repsPerSet : Int
+  , setsDailyTarget : Int
   }
 
 type alias ExerciseHistory =
   { exercise : Exercise
-  , loadKg : Float
-  , setsDailyTarget : Int
-  , repsPerSet : Int
   , dayRecords : List ExerciseDayRecord
   }
 
@@ -56,11 +60,7 @@ type alias CalendarDate =
   }
 
 type alias ExerciseDayRecord =
-  { exercise : Exercise
-  , loadKg : Float
-  , setsDailyTarget : Int
-  , repsPerSet : Int
-  , calendarDate : CalendarDate
+  { calendarDate : CalendarDate
   , setTimes : List LocalTimeRecord -- Applying toDate/toMonth/toDay to a member of setTimes should always return values that match what's in calendarDate
   }
 
@@ -71,7 +71,7 @@ type alias LocalTimeRecord =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model url key Time.utc "" "" [] [] (Time.millisToPosix 0)
+  ( Model url key Time.utc "" "" "" "" "" Nothing [] [] (Time.millisToPosix 0)
   , Task.perform SetTimeZone Time.here
   )
 
@@ -81,8 +81,11 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | SetTimeZone Time.Zone
-  | ExerciseNameChange String
-  | ExerciseDescriptionChange String
+  | ExerciseNameInputChange String
+  | ExerciseDescriptionInputChange String
+  | ExerciseLoadKgInputChange String
+  | ExerciseRepsPerSetInputChange String
+  | ExerciseSetsDailyTargetInputChange String
   | AddExercise
   | Refresh Time.Posix
 
@@ -107,18 +110,33 @@ update msg model =
       , Task.perform Refresh Time.now
       )
 
-    ExerciseNameChange newName ->
-      ( { model | exerciseNameEntry = newName }
+    ExerciseNameInputChange newName ->
+      ( { model | exerciseNameInput = newName }
       , Cmd.none
       )
 
-    ExerciseDescriptionChange newDescription ->
-      ( { model | exerciseDescriptionEntry = newDescription }
+    ExerciseDescriptionInputChange newDescription ->
+      ( { model | exerciseDescriptionInput = newDescription }
+      , Cmd.none
+      )
+
+    ExerciseLoadKgInputChange newLoadKg ->
+      ( { model | exerciseLoadKgInput = newLoadKg }
+      , Cmd.none
+      )
+
+    ExerciseRepsPerSetInputChange newRepsPerSet ->
+      ( { model | exerciseRepsPerSetInput = newRepsPerSet }
+      , Cmd.none
+      )
+
+    ExerciseSetsDailyTargetInputChange newSetsDailyTarget ->
+      ( { model | exerciseSetsDailyTargetInput = newSetsDailyTarget }
       , Cmd.none
       )
 
     AddExercise ->
-      ( { model | exercises = Exercise model.exerciseNameEntry model.exerciseDescriptionEntry :: model.exercises }
+      ( tryAddExercise model
       , Cmd.none
       )
 
@@ -126,6 +144,16 @@ update msg model =
       ( { model | timeOfLastRefresh = timeNow }
       , Cmd.none
       )
+
+tryAddExercise model =
+  case model.exercise of
+    Nothing ->
+      model
+    Just modelExercise ->
+      addExercise model modelExercise
+
+addExercise model exercise =
+  { model | exercises = exercise :: model.exercises }
 
 -- SUBSCRIPTIONS
 
@@ -144,14 +172,23 @@ view model =
   in
     { title = "Rep Chaser (prototype)"
     , body =
-        [ input [ placeholder "Exercise name", value model.exerciseNameEntry, onInput ExerciseNameChange ] []
-        , input [ placeholder "Description", value model.exerciseDescriptionEntry, onInput ExerciseDescriptionChange ] []
-        , button [ onClick AddExercise ] [ text "Add" ]
+        [ input [ placeholder "Exercise name", value model.exerciseNameInput, onInput ExerciseNameInputChange ] []
+        , input [ placeholder "Description", value model.exerciseDescriptionInput, onInput ExerciseDescriptionInputChange ] []
+        , input [ placeholder "Load (kg)", value model.exerciseLoadKgInput, onInput ExerciseLoadKgInputChange ] []
+        , input [ placeholder "Reps per set", value model.exerciseRepsPerSetInput, onInput ExerciseRepsPerSetInputChange ] []
+        , input [ placeholder "Sets daily target", value model.exerciseSetsDailyTargetInput, onInput ExerciseSetsDailyTargetInputChange ] []
+        , button [ onClick AddExercise, style "color" (addExerciseButtonColour model) ] [ text "Add" ]
         , div [] [ text "Exercises:" ]
         , Keyed.node "ul" [] (List.map viewKeyedExercise model.exercises)
         , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
         ]
     }
+
+addExerciseButtonColour : Model -> String
+addExerciseButtonColour model =
+  case String.toInt model.exerciseLoadKgInput of
+    Just _ -> "black"
+    Nothing -> "red"
 
 viewKeyedExercise : Exercise -> (String, Html msg)
 viewKeyedExercise exercise =
