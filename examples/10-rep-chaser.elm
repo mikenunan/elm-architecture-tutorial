@@ -111,32 +111,36 @@ update msg model =
       )
 
     ExerciseNameInputChange newName ->
-      ( { model | exerciseNameInput = newName }
+      ( { model | exerciseNameInput = newName, exercise = tryGetExerciseFromInputFields model }
       , Cmd.none
       )
 
     ExerciseDescriptionInputChange newDescription ->
-      ( { model | exerciseDescriptionInput = newDescription }
+      ( { model | exerciseDescriptionInput = newDescription, exercise = tryGetExerciseFromInputFields model }
       , Cmd.none
       )
 
     ExerciseLoadKgInputChange newLoadKg ->
-      ( { model | exerciseLoadKgInput = newLoadKg }
+      ( { model | exerciseLoadKgInput = newLoadKg, exercise = tryGetExerciseFromInputFields model }
       , Cmd.none
       )
 
     ExerciseRepsPerSetInputChange newRepsPerSet ->
-      ( { model | exerciseRepsPerSetInput = newRepsPerSet }
+      ( { model | exerciseRepsPerSetInput = newRepsPerSet, exercise = tryGetExerciseFromInputFields model }
       , Cmd.none
       )
 
     ExerciseSetsDailyTargetInputChange newSetsDailyTarget ->
-      ( { model | exerciseSetsDailyTargetInput = newSetsDailyTarget }
+      ( { model | exerciseSetsDailyTargetInput = newSetsDailyTarget, exercise = tryGetExerciseFromInputFields model }
       , Cmd.none
       )
 
     AddExercise ->
-      ( tryAddExercise model
+      ( case model.exercise of
+          Nothing ->
+            model
+          Just modelExercise ->
+            { model | exercises = modelExercise :: model.exercises }
       , Cmd.none
       )
 
@@ -145,15 +149,64 @@ update msg model =
       , Cmd.none
       )
 
-tryAddExercise model =
-  case model.exercise of
-    Nothing ->
-      model
-    Just modelExercise ->
-      addExercise model modelExercise
+tryGetExerciseFromInputFields : Model -> Maybe Exercise
+tryGetExerciseFromInputFields model =
+  let
+    -- loadKg = String.toFloat model.exerciseLoadKgInput
+    -- repsPerSet = String.toInt model.exerciseRepsPerSetInput
+    -- setsDailyTarget = String.toInt model.exerciseSetsDailyTargetInput
+    maybeUpdatedModel =
+      Just model
+        |> Maybe.andThen updateExerciseLoadKg
+        |> Maybe.andThen updateExerciseRepsPerSet
+        |> Maybe.andThen updateExerciseSetsDailyTargetSet
+  in
+    case maybeUpdatedModel of
+      Just updatedModel -> updatedModel.exercise
+      Nothing -> Nothing
+    -- if List.any (\v -> v == Nothing) [loadKg, repsPerSet, setsDailyTarget]
+    -- then Nothing
+    -- else
+    --   { name = model.exerciseNameInput
+    --   , description = model.exerciseDescriptionInput
+    --   , loadKg = loadKg
+    --   , repsPerSet = repsPerSet
+    --   , setsDailyTarget = setsDailyTarget
+    --   }
 
-addExercise model exercise =
-  { model | exercises = exercise :: model.exercises }
+updateExerciseLoadKg : Model -> Maybe Model
+updateExerciseLoadKg model =
+  case (String.toFloat model.exerciseLoadKgInput, model.exercise) of
+    (Just loadKg, Just modelExercise) -> Just { model | exercise = Just { modelExercise | loadKg = loadKg } }
+    _ -> Nothing
+
+updateExerciseRepsPerSet : Model -> Maybe Model
+updateExerciseRepsPerSet model =
+  case (String.toInt model.exerciseRepsPerSetInput, model.exercise) of
+    (Just repsPerSet, Just modelExercise) -> Just { model | exercise = Just { modelExercise | repsPerSet = repsPerSet } }
+    _ -> Nothing
+
+updateExerciseSetsDailyTargetSet : Model -> Maybe Model
+updateExerciseSetsDailyTargetSet model =
+  case (String.toInt model.exerciseSetsDailyTargetInput, model.exercise) of
+    (Just setsDailyTarget, Just modelExercise) -> Just { model | exercise = Just { modelExercise | setsDailyTarget = setsDailyTarget } }
+    _ -> Nothing
+
+parseMonth : String -> Maybe Int
+parseMonth userInput =
+  String.toInt userInput
+    |> Maybe.andThen toValidMonth
+
+parseMonth2 : String -> Maybe Int
+parseMonth2 userInput =
+  Maybe.andThen toValidMonth (String.toInt userInput)
+
+toValidMonth : Int -> Maybe Int
+toValidMonth month =
+    if 1 <= month && month <= 12 then
+        Just month
+    else
+        Nothing
 
 -- SUBSCRIPTIONS
 
@@ -186,9 +239,9 @@ view model =
 
 addExerciseButtonColour : Model -> String
 addExerciseButtonColour model =
-  case String.toInt model.exerciseLoadKgInput of
-    Just _ -> "black"
+  case model.exercise of
     Nothing -> "red"
+    Just _ -> "black"
 
 viewKeyedExercise : Exercise -> (String, Html msg)
 viewKeyedExercise exercise =
