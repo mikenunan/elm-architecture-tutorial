@@ -20,7 +20,7 @@ type Msg
   | ExerciseLoadKgInputChange String
   | ExerciseRepsPerSetInputChange String
   | ExerciseSetsDailyTargetInputChange String
-  | AddExercise
+  | AddExercisePrescription
   | Refresh Time.Posix
 
 view : Model -> Browser.Document Msg
@@ -37,18 +37,20 @@ view model =
         , input [ placeholder "Load (kg)", value model.exerciseLoadKgInput, onInput ExerciseLoadKgInputChange ] []
         , input [ placeholder "Reps per set", value model.exerciseRepsPerSetInput, onInput ExerciseRepsPerSetInputChange ] []
         , input [ placeholder "Sets daily target", value model.exerciseSetsDailyTargetInput, onInput ExerciseSetsDailyTargetInputChange ] []
-        , button [ onClick AddExercise, style "color" (addExerciseButtonColour model) ] [ text "Add" ]
+        , button [ onClick AddExercisePrescription, style "color" (addExercisePrescriptionButtonColour model) ] [ text "Add" ]
         , div [] [ text "Exercises:" ]
         , Keyed.node "ul" [] (List.map viewKeyedExercise model.exercises)
         , div [] [ text "Exercise histories:" ]
         , Keyed.node "ul" [] (List.map viewKeyedExerciseHistory model.exerciseHistories)
+        , div [] [ text "Exercise prescriptions:" ]
+        , Keyed.node "ul" [] (List.map viewKeyedExercisePrescription model.exercisePrescriptions)
         , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
         ]
     }
 
-addExerciseButtonColour : Model -> String
-addExerciseButtonColour model =
-  case model.exerciseInput of
+addExercisePrescriptionButtonColour : Model -> String
+addExercisePrescriptionButtonColour model =
+  case model.exercisePrescriptionInput of
     Nothing -> "red"
     Just _ -> "black"
 
@@ -67,3 +69,11 @@ viewKeyedExerciseHistory exerciseHistory =
 viewExerciseHistory : ExerciseHistory -> Html msg
 viewExerciseHistory exerciseHistory =
   li [] [ text (String.fromInt (List.length exerciseHistory.dayRecords)) ]
+
+viewKeyedExercisePrescription : ExercisePrescription -> (String, Html msg)
+viewKeyedExercisePrescription exercisePrescription =
+  ( exercisePrescription.exercise.name, lazy viewExercisePrescription exercisePrescription )
+
+viewExercisePrescription : ExercisePrescription -> Html msg
+viewExercisePrescription exercisePrescription =
+  li [] [ text ( exercisePrescription.exercise.name ++ " : " ++ (String.fromFloat exercisePrescription.loadKg) ) ]

@@ -38,15 +38,15 @@ type alias ExerciseHistory =
   , dayRecords : List ExerciseDayRecord
   }
 
+type alias ExerciseDayRecord =
+  { calendarDate : CalendarDate
+  , setTimes : List LocalTimeRecord -- Applying toDate/toMonth/toDay to a member of setTimes should always return values that match what's in calendarDate
+  }
+
 type alias CalendarDate =
   { year : Int
   , month : Int
   , day : Int
-  }
-
-type alias ExerciseDayRecord =
-  { calendarDate : CalendarDate
-  , setTimes : List LocalTimeRecord -- Applying toDate/toMonth/toDay to a member of setTimes should always return values that match what's in calendarDate
   }
 
 type alias LocalTimeRecord =

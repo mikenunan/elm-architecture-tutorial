@@ -71,10 +71,10 @@ update msg model =
       , Cmd.none
       )
 
-    AddExercise ->
-      ( case model.exerciseInput of
+    AddExercisePrescription ->
+      ( case model.exercisePrescriptionInput of
           Nothing -> model
-          Just modelExercise -> { model | exercises = modelExercise :: model.exercises }
+          Just modelExercisePrescription -> { model | exercisePrescriptions = modelExercisePrescription :: model.exercisePrescriptions }
       , Cmd.none
       )
 
@@ -114,7 +114,6 @@ tryGetExercisePrescriptionFromInputFields model =
     loadKgMaybe = String.toFloat model.exerciseLoadKgInput
     repsPerSetMaybe = String.toInt model.exerciseRepsPerSetInput
     setsDailyTargetMaybe = String.toInt model.exerciseSetsDailyTargetInput
-
   in
     case (model.exerciseInput, (loadKgMaybe, repsPerSetMaybe, setsDailyTargetMaybe)) of
       (Just exercise, (Just loadKg, Just repsPerSet, Just setsDailyTarget)) -> Just
