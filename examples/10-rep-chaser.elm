@@ -34,8 +34,10 @@ type alias Model =
   , exerciseLoadKgInput : String
   , exerciseRepsPerSetInput : String
   , exerciseSetsDailyTargetInput : String
-  , exercise : Maybe Exercise
+  , exerciseInput : Maybe Exercise
+  , exercisePrescriptionInput : Maybe ExercisePrescription
   , exercises : List Exercise
+  , exercisePrescriptions : List ExercisePrescription
   , exerciseHistories : List ExerciseHistory
   , timeOfLastRefresh : Time.Posix
   }
@@ -43,13 +45,17 @@ type alias Model =
 type alias Exercise =
   { name : String
   , description : String
+  }
+
+type alias ExercisePrescription =
+  { exercise : Exercise
   , loadKg : Float
   , repsPerSet : Int
   , setsDailyTarget : Int
   }
 
 type alias ExerciseHistory =
-  { exercise : Exercise
+  { exercisePrescription : ExercisePrescription
   , dayRecords : List ExerciseDayRecord
   }
 
@@ -71,7 +77,7 @@ type alias LocalTimeRecord =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model url key Time.utc "" "" "" "" "" Nothing [] [] (Time.millisToPosix 0)
+  ( Model url key Time.utc "" "" "" "" "" Nothing Nothing [] [] [] (Time.millisToPosix 0)
   , Task.perform SetTimeZone Time.here
   )
 
@@ -118,22 +124,22 @@ update msg model =
       )
 
     ExerciseLoadKgInputChange newLoadKg ->
-      ( tryUpdateExerciseFromInputFields { model | exerciseLoadKgInput = newLoadKg }
+      ( tryUpdateExercisePrescriptionFromInputFields { model | exerciseLoadKgInput = newLoadKg }
       , Cmd.none
       )
 
     ExerciseRepsPerSetInputChange newRepsPerSet ->
-      ( tryUpdateExerciseFromInputFields { model | exerciseRepsPerSetInput = newRepsPerSet }
+      ( tryUpdateExercisePrescriptionFromInputFields { model | exerciseRepsPerSetInput = newRepsPerSet }
       , Cmd.none
       )
 
     ExerciseSetsDailyTargetInputChange newSetsDailyTarget ->
-      ( tryUpdateExerciseFromInputFields { model | exerciseSetsDailyTargetInput = newSetsDailyTarget }
+      ( tryUpdateExercisePrescriptionFromInputFields { model | exerciseSetsDailyTargetInput = newSetsDailyTarget }
       , Cmd.none
       )
 
     AddExercise ->
-      ( case model.exercise of
+      ( case model.exerciseInput of
           Nothing -> model
           Just modelExercise -> { model | exercises = modelExercise :: model.exercises }
       , Cmd.none
@@ -147,20 +153,39 @@ update msg model =
 tryUpdateExerciseFromInputFields : Model -> Model
 tryUpdateExerciseFromInputFields model =
   case tryGetExerciseFromInputFields model of
-    Just exercise -> { model | exercise = Just exercise }
-    Nothing -> { model | exercise = Nothing }
+    Just exercise -> { model | exerciseInput = Just exercise }
+    Nothing -> { model | exerciseInput = Nothing }
 
 tryGetExerciseFromInputFields : Model -> Maybe Exercise
 tryGetExerciseFromInputFields model =
   let
+    exerciseNameInput = String.trim model.exerciseNameInput
+  in
+    if not (String.isEmpty exerciseNameInput) then
+      Just
+        { name = model.exerciseNameInput
+        , description = String.trim model.exerciseDescriptionInput
+        }
+    else
+      Nothing
+
+tryUpdateExercisePrescriptionFromInputFields : Model -> Model
+tryUpdateExercisePrescriptionFromInputFields model =
+  case tryGetExercisePrescriptionFromInputFields model of
+    Just exercisePrescriptionInput -> { model | exercisePrescriptionInput = Just exercisePrescriptionInput }
+    Nothing -> { model | exercisePrescriptionInput = Nothing }
+
+tryGetExercisePrescriptionFromInputFields : Model -> Maybe ExercisePrescription
+tryGetExercisePrescriptionFromInputFields model =
+  let
     loadKgMaybe = String.toFloat model.exerciseLoadKgInput
     repsPerSetMaybe = String.toInt model.exerciseRepsPerSetInput
     setsDailyTargetMaybe = String.toInt model.exerciseSetsDailyTargetInput
+
   in
-    case (loadKgMaybe, repsPerSetMaybe, setsDailyTargetMaybe) of
-      (Just loadKg, Just repsPerSet, Just setsDailyTarget) -> Just
-        { name = model.exerciseNameInput
-        , description = model.exerciseDescriptionInput
+    case (model.exerciseInput, (loadKgMaybe, repsPerSetMaybe, setsDailyTargetMaybe)) of
+      (Just exercise, (Just loadKg, Just repsPerSet, Just setsDailyTarget)) -> Just
+        { exercise = exercise
         , loadKg = loadKg
         , repsPerSet = repsPerSet
         , setsDailyTarget = setsDailyTarget
@@ -192,13 +217,15 @@ view model =
         , button [ onClick AddExercise, style "color" (addExerciseButtonColour model) ] [ text "Add" ]
         , div [] [ text "Exercises:" ]
         , Keyed.node "ul" [] (List.map viewKeyedExercise model.exercises)
+        , div [] [ text "Exercise histories:" ]
+        , Keyed.node "ul" [] (List.map viewKeyedExerciseHistory model.exerciseHistories)
         , text ("Last refresh time: " ++ hour ++ ":" ++ minute ++ ":" ++ second)
         ]
     }
 
 addExerciseButtonColour : Model -> String
 addExerciseButtonColour model =
-  case model.exercise of
+  case model.exerciseInput of
     Nothing -> "red"
     Just _ -> "black"
 
@@ -212,7 +239,7 @@ viewExercise exercise =
 
 viewKeyedExerciseHistory : ExerciseHistory -> (String, Html msg)
 viewKeyedExerciseHistory exerciseHistory =
-  ( exerciseHistory.exercise.name, lazy viewExerciseHistory exerciseHistory )
+  ( exerciseHistory.exercisePrescription.exercise.name, lazy viewExerciseHistory exerciseHistory )
 
 viewExerciseHistory : ExerciseHistory -> Html msg
 viewExerciseHistory exerciseHistory =
